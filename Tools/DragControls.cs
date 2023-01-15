@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace AmmoCount.Util;
+namespace AmmoCount.Tools;
 
 public class DragControl : MonoBehaviour, IDragHandler, IEndDragHandler
 {
@@ -22,7 +22,7 @@ public class DragControl : MonoBehaviour, IDragHandler, IEndDragHandler
     public void OnEndDrag(PointerEventData eventData)
     {
         AmmoCountPlugin.UIAnchorDrag = dragRectTransform.anchoredPosition;
-        AmmoCountPlugin.UIAnchor.Value = RemoveSpecialCharacters(AmmoCountPlugin.UIAnchorDrag.ToString());
+        AmmoCountPlugin.UIPosition.Value = RemoveSpecialCharacters(AmmoCountPlugin.UIAnchorDrag.ToString());
     }
 
     public static string RemoveSpecialCharacters(string str)

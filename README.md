@@ -13,6 +13,7 @@ It has lots of thing you can change to make it work for you.<br/>
 
 | Version | Changes |
 |----|----|
+| 1.0.2 | - Fix the scaling<br/> - Removed font size config and maded it auto scaling<br/>
 | 1.0.1 | - Added the ammo name and added more color change options<br/>
 | 1.0.0 | - Release<br/>
 </details> 

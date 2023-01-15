@@ -3,7 +3,6 @@ using System.Collections;
 using System.IO;
 using System.Reflection;
 using AmmoCount.Tools;
-using AmmoCount.Util;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -25,7 +24,7 @@ public class AmmoCountPlugin : BaseUnityPlugin
     }
 
     internal const string ModName = "AmmoCount";
-    internal const string ModVersion = "1.0.1";
+    internal const string ModVersion = "1.0.2";
     internal const string Author = "MadBuffoon";
     private const string ModGUID = Author + "." + ModName;
     private static readonly string ConfigFileName = ModGUID + ".cfg";
@@ -54,11 +53,12 @@ public class AmmoCountPlugin : BaseUnityPlugin
         UpdateDelayConfig = Config.Bind("2 - UI", "Update Rate", 0.3f,
             new ConfigDescription("The update in seconds.\nAuto rounds to the nearest 1/10 of a second",
                 new AcceptableValueRange<float>(0.1f, 1.5f)));
-        UIAnchor = Config.Bind("2 - UI", "Position", "0%, -22.5%", "Sets the Position");
-        LocalScale = Config.Bind("2 - UI", "Scale", new Vector2(400.0f, 60.0f), "Sets the scale");
-        AmmoTextConfig = Config.Bind("3 - Text", "Display Format", "{1}: {0}",
+        UIPosition = Config.Bind("2 - UI", "Position", "0%, -22.5%", "Sets the Position");
+        BoxSizeConfig = Config.Bind("2 - UI", "Box Size", new Vector2(500.0f, 80.0f), "Sets the box size");
+        BoxScaleConfig = Config.Bind("2 - UI", "Box Scale", 1f, "Sets the box scale");
+        AmmoTextConfig = Config.Bind("3 - Text", "Display Format", "{1}\n{0}",
             "Sets how you view the text.\n{0} = current amount\n{1} Name");
-        AmmoTextSizeConfig = Config.Bind("3 - Text", "Size", 25, "Changes the text font size.");
+        //AmmoTextSizeConfig = Config.Bind("3 - Text", "Size", 25, "Changes the text font size.");
         AmmoTextAlign = Config.Bind("3 - Text", "Alignment", TextAnchor.MiddleCenter, "Where the text will Align");
         AmmoTotalCountConfig = Config.Bind("3 - Text", "Show Total Amount", true,
             "Shows the total amount of the currently equipped arrow/bolt you have on");
@@ -105,14 +105,22 @@ public class AmmoCountPlugin : BaseUnityPlugin
     {
         while (true)
         {
+            
             var UpdateDelay = Math.Round(UpdateDelayConfig.Value * 10) / 10;
             UpdateDelayConfig.Value = (float)UpdateDelay;
-            HudAwakePatch.ammoPanelRectTransform.sizeDelta = LocalScale.Value;
-            HudAwakePatch.ammoPanelText.fontSize = AmmoTextSizeConfig.Value;
+            try
+            {
+                //HudAwakePatch.ammoPanel.transform.localScale = new Vector3((BoxScaleConfig.Value), (BoxScaleConfig.Value));
+                //HudAwakePatch.ammoPanelRectTransform.sizeDelta = BoxSizeConfig.Value;
+                HudAwakePatch.ammoPanelRectTransform.sizeDelta = new Vector2(
+                    (BoxSizeConfig.Value.x * BoxScaleConfig.Value), (BoxSizeConfig.Value.y * BoxScaleConfig.Value));
+            }
+            catch { }
+            //HudAwakePatch.ammoPanelText.fontSize = AmmoTextSizeConfig.Value;
             HudAwakePatch.ammoPanelText.alignment = AmmoTextAlign.Value;
             try
             {
-                var split = UIAnchor.Value.Split(',');
+                var split = UIPosition.Value.Split(',');
                 UIAnchorDrag = new Vector2(
                     split[0].Trim().EndsWith("%")
                         ? float.Parse(split[0].Trim().Substring(0, split[0].Trim().Length - 1)) / 100f * Screen.width
@@ -122,9 +130,7 @@ public class AmmoCountPlugin : BaseUnityPlugin
                         : float.Parse(split[1].Trim()));
                 HudAwakePatch.ammoPanelRectTransform.anchoredPosition = UIAnchorDrag;
             }
-            catch
-            {
-            }
+            catch { }
 
             yield return new WaitForSeconds(1);
         }
@@ -250,28 +256,29 @@ public class AmmoCountPlugin : BaseUnityPlugin
     public static class HudAwakePatch
     {
         public static GameObject ammoPanel;
-        public static Text ammoPanelText; // So we can update this anywhere and have the reference to the text component
+        // So we can update this anywhere and have the reference to the text component
+        public static Text ammoPanelText; 
 
-        public static RectTransform
-            ammoPanelRectTransform; // So we can update this anywhere and have the reference to the text component
+        // So we can update this anywhere and have the reference to the text component
+        public static RectTransform ammoPanelRectTransform; 
 
         private static void Postfix(Hud __instance)
         {
             ammoPanel = new GameObject("MadBuffoonAmmoPanel");
             ammoPanel.transform.SetParent(__instance.m_rootObject.transform);
-            ammoPanelRectTransform =
-                ammoPanel
-                    .AddComponent<
-                        RectTransform>(); // If you want to save the position of the ammo panel or something in the future
+            // If you want to save the position of the ammo panel or something in the future
+            ammoPanelRectTransform = ammoPanel.AddComponent<RectTransform>(); 
             ammoPanel.AddComponent<DragControl>();
             ammoPanelRectTransform.transform.SetParent(ammoPanel.transform);
-            //ammoPanel.transform.position = new Vector3(AmmoCountPlugin.UIAnchor.x, AmmoCountPlugin.UIAnchor.y, 0);
+            //ammoPanel.transform.position = new Vector3(UIPosition.Value);
 
             // Make the ammo panel on the left middle of the screen
-            ammoPanelRectTransform.sizeDelta = LocalScale.Value;
+            ammoPanelRectTransform.sizeDelta = BoxSizeConfig.Value;
             ammoPanelText = ammoPanel.AddComponent<Text>();
             ammoPanelText.font = __instance.m_actionName.font;
-            ammoPanelText.fontSize = AmmoTextSizeConfig.Value;
+            //ammoPanelText.fontSize = AmmoTextSizeConfig.Value;
+            ammoPanelText.resizeTextForBestFit = true;
+            ammoPanelText.resizeTextMaxSize = 500;
             ammoPanelText.text = "";
 
             //ammoPanelText.text = $"{AmmoName}: {ammoAmount}/{ammoTotal}";
@@ -288,11 +295,12 @@ public class AmmoCountPlugin : BaseUnityPlugin
 
     public static ConfigEntry<float> UpdateDelayConfig;
 
-    public static ConfigEntry<string> UIAnchor = null!;
-    public static ConfigEntry<Vector2> LocalScale = null!;
+    public static ConfigEntry<string> UIPosition = null!;
+    public static ConfigEntry<Vector2> BoxSizeConfig = null!;
+    public static ConfigEntry<float> BoxScaleConfig = null!;
 
     public static ConfigEntry<string> AmmoTextConfig;
-    public static ConfigEntry<int> AmmoTextSizeConfig;
+    //public static ConfigEntry<int> AmmoTextSizeConfig;
     public static ConfigEntry<TextAnchor> AmmoTextAlign;
     public static ConfigEntry<bool> AmmoTotalCountConfig;
 
