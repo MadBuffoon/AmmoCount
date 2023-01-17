@@ -24,7 +24,7 @@ public class AmmoCountPlugin : BaseUnityPlugin
     }
 
     internal const string ModName = "AmmoCount";
-    internal const string ModVersion = "1.0.2";
+    internal const string ModVersion = "1.0.3";
     internal const string Author = "MadBuffoon";
     private const string ModGUID = Author + "." + ModName;
     private static readonly string ConfigFileName = ModGUID + ".cfg";
@@ -39,6 +39,7 @@ public class AmmoCountPlugin : BaseUnityPlugin
         { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
     public static Vector2 UIAnchorDrag;
+    public static bool AmmoUIDrage;
 
     private readonly Harmony _harmony = new(ModGUID);
     // Delta drag
@@ -64,15 +65,15 @@ public class AmmoCountPlugin : BaseUnityPlugin
             "Shows the total amount of the currently equipped arrow/bolt you have on");
         AmmoTextColor1Config = Config.Bind("4 - Color", "Stage 1", new Color(1f, 1f, 1, 1f),
             "Stage 1 Color for 50 and above");
-        AmmoTextStage1Config = Config.Bind("4 - Color", "Stage 1 Change Point", 49,
+        AmmoTextStage1Config = Config.Bind("4 - Color", "Stage 1 Change Point", 75,
             "At what point it will go to the next stage");
         AmmoTextColor2Config = Config.Bind("4 - Color", "Stage 2", new Color(1f, 0.89f, 0.41f, 1f),
             "Stage 2 Color for 25 to 49");
-        AmmoTextStage2Config = Config.Bind("4 - Color", "Stage 2 Change Point", 24,
+        AmmoTextStage2Config = Config.Bind("4 - Color", "Stage 2 Change Point", 50,
             "At what point it will go to the next stage");
         AmmoTextColor3Config = Config.Bind("4 - Color", "Stage 3", new Color(1f, 0.64f, 0.41f, 1f),
             "Stage 3 Color for 6 to 24");
-        AmmoTextStage3Config = Config.Bind("4 - Color", "Stage 3 Change Point", 5,
+        AmmoTextStage3Config = Config.Bind("4 - Color", "Stage 3 Change Point", 25,
             "At what point it will go to the next stage");
         AmmoTextColor4Config = Config.Bind("4 - Color", "Stage 4", new Color(1f, 0.25f, 0.25f, 1f),
             "Stage 3 Color for 5 and below");
@@ -120,6 +121,8 @@ public class AmmoCountPlugin : BaseUnityPlugin
             HudAwakePatch.ammoPanelText.alignment = AmmoTextAlign.Value;
             try
             {
+                if (!AmmoUIDrage)
+                {
                 var split = UIPosition.Value.Split(',');
                 UIAnchorDrag = new Vector2(
                     split[0].Trim().EndsWith("%")
@@ -129,6 +132,7 @@ public class AmmoCountPlugin : BaseUnityPlugin
                         ? float.Parse(split[1].Trim().Substring(0, split[1].Trim().Length - 1)) / 100f * Screen.height
                         : float.Parse(split[1].Trim()));
                 HudAwakePatch.ammoPanelRectTransform.anchoredPosition = UIAnchorDrag;
+                }
             }
             catch { }
 
@@ -162,6 +166,7 @@ public class AmmoCountPlugin : BaseUnityPlugin
             if (ammoItem == null)
             {
                 HudAwakePatch.ammoPanelText.text = string.Empty;
+                HudAwakePatch.ammoPanel.SetActive(false);
             }
             else if (player.m_ammoItem != null)
             {
@@ -205,6 +210,8 @@ public class AmmoCountPlugin : BaseUnityPlugin
 
                     //
                     // Player.m_localPlayer.m_ammoItem.GetIcon()
+                    
+                    HudAwakePatch.ammoPanel.SetActive(true);
                     var ammoNameColored =
                         Helper.ColorString(
                             Localization.instance.Localize(Player.m_localPlayer.m_ammoItem.m_shared.m_name),
@@ -217,12 +224,14 @@ public class AmmoCountPlugin : BaseUnityPlugin
                 catch
                 {
                     HudAwakePatch.ammoPanelText.text = string.Empty;
+                    HudAwakePatch.ammoPanel.SetActive(false);
                 }
             }
         }
         else
         {
             HudAwakePatch.ammoPanelText.text = string.Empty;
+            HudAwakePatch.ammoPanel.SetActive(false);
         }
     }
 

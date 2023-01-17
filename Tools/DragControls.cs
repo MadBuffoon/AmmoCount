@@ -17,12 +17,14 @@ public class DragControl : MonoBehaviour, IDragHandler, IEndDragHandler
     public void OnDrag(PointerEventData eventData)
     {
         dragRectTransform.anchoredPosition += eventData.delta;
+        AmmoCountPlugin.AmmoUIDrage = true;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
         AmmoCountPlugin.UIAnchorDrag = dragRectTransform.anchoredPosition;
         AmmoCountPlugin.UIPosition.Value = RemoveSpecialCharacters(AmmoCountPlugin.UIAnchorDrag.ToString());
+        AmmoCountPlugin.AmmoUIDrage = false;
     }
 
     public static string RemoveSpecialCharacters(string str)
